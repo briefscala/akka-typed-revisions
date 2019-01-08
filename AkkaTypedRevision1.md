@@ -2,32 +2,32 @@
 
 ### A quick look at traditional Akka
 
-You can think of Akka Typed as the same Akka you know but with types. 
-If you have significant experience with Akka this is probably what you expect however, Akka Typed have significant difference that are
-a departure from traditional Akka. Akka Type is in tune with Functional Programing for distributed systems adding type safety at a distance.
+You can think of Akka Typed as the same Akka you know but with more types around. 
+If you have significant experience with Akka this is probably what you expect however, Akka Typed have significant differences that are
+a departure from the traditional mindset in Akka. It is in tune with Functional Programing as you might know it from other parts in the Scala scene while maintaining 
+its distributed and asynchronous nature.
 
-Let's make a pause here for a moment and reflect what type safety really give us. Clearly, the compiler can help us discovering bugs that
-could otherwise gone unnoticed until Black Friday when that the holiday offer part of the code gets executed and the application crashed.
-I would argue that although these things has happened and unfortunately still happen the compiler protects only minimally against bugs in general.
-There are another two aspect about developing where the compiler help is not only significant but makes a compelling economical argument. The first is 
-productivity. Even a junior developer after just a couple of months using a robust compiler can be significantly more efficient than a developer 
-in their mid-career developer that doesn't have a compiler at hand for their every day coding. The compiler, statically check your code as you type and fails fast.
-Very fast. In fact, it fails instantly helping us recover from failure and correct the code on the spot. I would argue that many of these errors, where there
-isn't a compiler, will be caught before going to production but having a compiler means that they are corrected from the get go and that translates in massive
-productivity gains. The compiler does this so fast and we are so adept to it that we not longer realised, unless we stop and ponder on it because someone asked,
-for example, why do we need to learn about higher kinded types adding that it seems like a burden unrelated to programming. 
+Let's make a pause here for a moment and reflect what type safety really give us. Clearly, the scala compiler can help us discovering bugs that
+could otherwise go unnoticed until Black Friday when that the holiday offer part of the code got executed and the application crashed.
+I would argue that although event like that has happened and unfortunately still happen the scala compiler protects only minimally against bugs in general.
+There are another two aspects about developing where the scala compiler help is not only significant but makes a compelling economical argument. The first is 
+productivity. The scala compiler, statically check your code as you type and fails fast.
+Very fast. In fact, it fails instantly helping us recover from failure and correct the code on the spot. I would argue that many of these errors, with dynamically typed 
+Actors, will be caught before deploying to production but having a compiler means that they are corrected from the get go and that could translates in massive
+productivity gains in some scenarios. We've come to expect this of most modern compilers like the Scala, Rust or Kotlin compilers and unless we stop and ponder on it 
+because someone asked, for example, why do we need to learn about higher kinded types adding that it seems like a burden unrelated to programming.
 
 But we are not that often writing new software from scratch. We do but most of our time is actually spent maintaining software. Maybe it is our software. Or a software
 that we made on the job but almost immediately after we made it new business rules came in or an important library api got changed and we need to refactor our code.
-This put us in a situation where the code isn't immediately recognizable and making changes is a lot harder. I would argue that as a business owner or as a developer
-you want the best compiler that you can get your hands on.
+This put us in a situation where the code isn't immediately recognizable and making changes is a lot harder. In the context of traditional Akka, with dynamically typed
+actors, refactoring code that ins't immediately recognizable because we just wrote it is a tremendous task. Akka Typed's statically typed actors makes this so much easier.
 
 The second reason that you want to have types is because types tell the story and the intention of the software so you can follow the types 
 and only occasionally dive into the implementation to find out more about it when you need to. Akka Typed capitalizes on both of these
-and that means that it is a significant departure from untyped Akka.
+and that means that it is a significant departure from traditional Akka.
 
-Traditional Akka actors received messages on the `Receive` method which is largely untyped represented by `PartialFunction[Any, Unit]`. Let's see an example to
-recap on this aspect of traditional actors
+Let's take a look. Traditional Akka actors received messages on the `Receive` method which is largely untyped represented by `PartialFunction[Any, Unit]`. Let's see an 
+example to recap on this aspect of traditional actors.
 
 ```scala
 import akka.actor._
