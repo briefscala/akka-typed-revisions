@@ -151,21 +151,22 @@ import Door._
 import scala.util.{Success, Failure}
 import scala.concurrent.duration._
 
-def door(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorProtocol] = Behaviors.setup { ctx =>
+def door(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorProtocol] = 
+  Behaviors.setup { ctx =>
 
-  def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) {
-    case Success(status: AlarmActivated.type) => Closed
-    case Success(status: AlarmDeactivated.type) => Opened
-    case Failure(exception) => Closed
-  }
+    def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) {
+      case Success(status: AlarmActivated.type) => Closed
+      case Success(status: AlarmDeactivated.type) => Opened
+      case Failure(exception) => Closed
+    }
   
-  Behaviors.receiveMessage {
-    case Open | Close => alarmStatus()
-      Behaviors.same
-    case Opened => door(alarm, Opened)
-    case Closed => door(alarm, Closed)
+    Behaviors.receiveMessage {
+      case Open | Close => alarmStatus()
+        Behaviors.same
+      case Opened => door(alarm, Opened)
+      case Closed => door(alarm, Closed)
+    }
   }
-}
 
 def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] =
   Behaviors.receive { (ctx, msg) => msg match {
