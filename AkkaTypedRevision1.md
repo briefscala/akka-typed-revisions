@@ -84,12 +84,12 @@ class MyActor extends Actor {
 
 Although `context.become` is extremely useful for ensuring that steps are followed in a predictable order it come with many drawbacks. 
 We won't dive onto all of them here but just on the fact that it is very hard to predict, when sending messages to `myActor` if an known messages will be handled.
-So not only traditional actors are untyped (in effect) but they can change their behavior at runtime to stop handling messages that they were known to handle. There is no
-discoverability of the fact that could protect the code against a naive refactoring or even if it wasn't naive.
+So, not only traditional actors are untyped (in effect), but they can change their behavior at runtime to stop handling messages that they were known to handle. There is no
+discoverability of that fact that could protect the code against a naive refactoring or even if it wasn't naive.
 
 ### Akka Type Behaviors
 
-The aim of this post to revise Akka Typed and explore not only what change in terms of the Api but how much more safety it brings us and what increase productivity we can 
+The aim of this post is to revise Akka Typed and explore not only what change in terms of the api but how much more safety it brings us and what increase productivity we can 
 expect from developing Akka Typed distributed applications vs untyped applications.
 
 Let's take as an example a bulgar alarm system which is an example that has been explored before by Konrad Malawski [here](https://www.slideshare.net/ktoso/akka-typed-quick-talk-jfokus-2018).
@@ -138,15 +138,16 @@ state
 difference is that now you can send messages directly to `system` and these will be received by the root actor.
 
 In this trivial alarm example if we try to activate or deactivate the alarm we get the expected behavior but we couldn't send `Done` to our alarm. The compiler
-will have our back here and this means huge gain on productivity while developing large Akka systems but even if those systems aren't big. It is so easy to forget
-what I wrote yesterday in that other file in another package. Whit Akka Typed if you forget the compiler have your back immediately and get you back on track.
+will have our back here and this means huge gain on productivity while developing large Akka systems but even if those systems aren't big. It is too easy to forget
+what I wrote yesterday in that other file in another package. With Akka Typed if you forget some aspect of the protocol the compiler have your back immediately and 
+get you back on track.
 
 
 ### Ask Pattern
 
-Ok but by now you should be wondering how we reply to the the messages sender since it could really be any actor and all typed actors need us to be aware of their
-protocols. The Akka Typed solution for that is straight forward. As part of our protocol we can accept a `replyTo` actor reference (in place of the implicit sender
-in traditional actors) of the type of the protocol reply. The requester actor will be providing the adapter function to convert from the reply to protocol to its
+Ok, by now you should be wondering how we reply to the the interrogation messages, `GetState` or similar, since it could really be any actor and all typed actors need us to be aware of their
+protocol. The Akka Typed solution for that is straight forward. As part of our protocol we can accept a `replyTo` actor reference (in place of the implicit sender
+in traditional actors) of the type of the state/reply protocol. The requester actor will be providing the adapter function to convert from the internal state or reply to its
 own protocol. Let's see this in our alarm system to get a better feeling for it.
 
 ```scala
