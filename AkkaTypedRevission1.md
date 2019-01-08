@@ -199,6 +199,10 @@ def root(): Behavior[String] = Behaviors.setup { ctx =>
   val pin = 54321
   val alarm = ctx.spawn(anAlarm(pin), "alarm")
   val door = ctx.spawn(aDoor(alarm), "door")
+  
+  /**
+  * We'll use the behavior `withTimers` to periodically toggle the alarm and try opening the door
+  */
   Behaviors.withTimers { timers =>
     timers.startPeriodicTimer("alarm", "changeAlarm", 3.seconds)
     timers.startPeriodicTimer("door", "tryDoor", 1.seconds)
