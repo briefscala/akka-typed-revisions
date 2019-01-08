@@ -156,7 +156,7 @@ implicit val timeout: Timeout = Timeout(5.seconds)
 
 def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorProtocol] =
   Behaviors.setup { ctx =>
-    def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) {
+    def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) { // (1.)
       case Success(status: AlarmActivated.type) => Closed
       case Success(status: AlarmDeactivated.type) => Opened
       case Failure(exception) => Closed
@@ -197,7 +197,7 @@ def root(): Behavior[String] = Behaviors.setup { ctx =>
   /**
   * We'll use the behavior `withTimers` to periodically toggle the alarm and try opening the door
   */
-  Behaviors.withTimers { timers =>
+  Behaviors.withTimers { timers => // (2.)
     timers.startPeriodicTimer("alarm", "changeAlarm", 3.seconds)
     timers.startPeriodicTimer("door", "tryDoor", 1.seconds)
     Behaviors.receiveMessage {
@@ -234,4 +234,9 @@ object Door {
 }
 ```
 
-Our `door` behavior 
+1. The `ctx.ask` takes the target actor, the alarm, and its interrogation command (which can be converted to function of type `ActorRef[Response] => Request`) followed by the adapter
+function that convert the target's responses into our expected commands.
+2. `Behaviors.withTimers` allows to send us messages that will be received later, either just once or periodically, and they will become part of our protocol.
+
+In the next session we will continue from here and explore another way that Akka Type provides for communicating with other actors and will see how these plays out when actors are
+distributed.
