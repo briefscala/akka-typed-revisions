@@ -178,7 +178,7 @@ def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorPr
       case Open | Close => alarmStatus()
         Behaviors.same
       case Opened => aDoor(alarm, Opened)
-      case Closed =>aDoor(alarm, Closed)
+      case Closed => aDoor(alarm, Closed)
     }
   }
 
