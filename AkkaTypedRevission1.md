@@ -176,12 +176,6 @@ def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorPr
 
 def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] =
   Behaviors.receive { (ctx, msg) => msg match {
-    case ActivateAlarm(`pinCode`) =>
-      ctx.log.info("alarm activated")
-      anAlarm(pinCode, AlarmActivated)
-    case DeactivateAlarm(`pinCode`) =>
-      ctx.log.info("alarm deactivated")
-      anAlarm(pinCode, AlarmDeactivated)
     case GetAlarmStatus(repyTo: ActorRef[AlarmState]) =>
       repyTo ! status
       Behaviors.same
@@ -219,8 +213,6 @@ val system = ActorSystem(root(), "system")
 
 object Alarm {
   sealed trait AlarmCmd
-  case class ActivateAlarm(pinCode: Int) extends AlarmCmd
-  case class DeactivateAlarm(pinCode: Int) extends AlarmCmd
   case class GetAlarmStatus(repyTo: ActorRef[AlarmState]) extends AlarmCmd
   case class ToggleAlarm(pinCode: Int) extends AlarmCmd
   
