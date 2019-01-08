@@ -1,6 +1,6 @@
 package com.ereactive.examples.akka.alarm
 
-import akka.actor.typed.{ActorSystem, Behavior}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import com.ereactive.examples.akka.alarm.Alarm._
@@ -9,48 +9,103 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 object Main {
+
+
   def main(args: Array[String]): Unit = {
 
-    val system: ActorSystem[SystemProtocol] = ActorSystem(root, "alarm")
+    object Alarm {
+      sealed trait AlarmCmd
+      case class ActivateAlarm(pinCode: Int) extends AlarmCmd
+      case class DeactivateAlarm(pinCode: Int) extends AlarmCmd
+      case class GetAlarmStatus(repyTo: ActorRef[AlarmState]) extends AlarmCmd
+      case class ToggleAlarm(pinCode: Int) extends AlarmCmd
 
-    //system !
-    system ! GetAlarmStatus
+      sealed trait AlarmState
+      case object AlarmActivated extends AlarmState
+      case object AlarmDeactivated extends AlarmState
+    }
 
-  }
+    object Door {
+      sealed trait DoorProtocol
 
-  trait SystemProtocol
-  case class AlarmResponse(message: String) extends SystemProtocol
-  case object GetAlarmStatus extends SystemProtocol
+      sealed trait DoorCmd extends DoorProtocol
+      case object Open extends DoorCmd
+      case object Close extends DoorCmd
 
-  val alarmBehavior = Alarm(initialPinCode = 2121)
+      sealed trait DoorState extends DoorProtocol
+      case object Opened extends DoorState
+      case object Closed extends DoorState
+    }
 
-  val root: Behavior[SystemProtocol] = Behaviors.setup { ctx =>
+    import akka.actor.typed._
+    import akka.actor.typed.scaladsl.Behaviors
+    import akka.Done
+    import Alarm._
+    import Door._
+    import scala.util.{Success, Failure}
+    import scala.concurrent.duration._
 
-    val anAlarm = ctx.spawn(alarmBehavior.anAlarm(), "alarm")
 
-    implicit val timeout = Timeout(5, SECONDS)
+    implicit val timeout = Timeout(5.seconds)
 
-    def askForStatus() = ctx.ask(anAlarm)(GetAlarmState) {
-      case Success(value) => value match {
-        case ActiveAlarm => AlarmResponse("alarm active")
-        case InactiveAlarm => AlarmResponse("alarm not active")
-        case LockedAlarm => AlarmResponse("alarm locked")
+    def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorProtocol] =
+      Behaviors.setup { ctx =>
+        def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) {
+          case Success(status: AlarmActivated.type) => Closed
+          case Success(status: AlarmDeactivated.type) => Opened
+          case Failure(exception) => Closed
+        }
+
+        Behaviors.receiveMessage {
+          case Open | Close => alarmStatus()
+            Behaviors.same
+          case Opened =>
+            ctx.log.info("opening the door")
+            aDoor(alarm, Opened)
+          case Closed =>
+            ctx.log.info("closing the door")
+            aDoor(alarm, Closed)
+        }
       }
-      case Failure(exception) => AlarmResponse(s"error while retrieving the alarm status: $exception")
+
+    def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] =
+      Behaviors.receive { (ctx, msg) => msg match {
+        case ActivateAlarm(`pinCode`) =>
+          ctx.log.info("alarm activated")
+          anAlarm(pinCode, AlarmActivated)
+        case DeactivateAlarm(`pinCode`) =>
+          ctx.log.info("alarm deactivated")
+          anAlarm(pinCode, AlarmDeactivated)
+        case GetAlarmStatus(repyTo: ActorRef[AlarmState]) =>
+          repyTo ! status
+          Behaviors.same
+        case ToggleAlarm(`pinCode`) => status match {
+          case AlarmActivated =>
+            ctx.log.info("alarm deactivated: toggled")
+            anAlarm(pinCode, AlarmDeactivated)
+          case AlarmDeactivated =>
+            ctx.log.info("alarm activated: toggled")
+            anAlarm(pinCode, AlarmActivated)
+        }
+      }}
+
+    def root(): Behavior[String] = Behaviors.setup { ctx =>
+      val pin = 54321
+      val alarm = ctx.spawn(anAlarm(pin), "alarm")
+      val door = ctx.spawn(aDoor(alarm), "door")
+      Behaviors.withTimers { timers =>
+        timers.startPeriodicTimer("alarm", "changeAlarm", 3.seconds)
+        timers.startPeriodicTimer("door", "tryDoor", 1.seconds)
+        Behaviors.receiveMessage {
+          case "changeAlarm" => alarm ! ToggleAlarm(pin)
+            Behaviors.same
+          case "tryDoor" => door ! Open
+            Behaviors.same
+        }
+      }
     }
 
-    val waitingForResponse: Behavior[SystemProtocol] = Behaviors.receiveMessage {
-      case AlarmResponse(response) =>
-        ctx.log.info(s"the alarm response was: $response")
-        Behaviors.same
-    }
+    val system = ActorSystem(root(), "system")
 
-    val receivingCommands: Behavior[SystemProtocol] = Behaviors.receiveMessage {
-      case GetAlarmStatus =>
-        askForStatus()
-        waitingForResponse
-    }
-
-    receivingCommands
   }
 }
