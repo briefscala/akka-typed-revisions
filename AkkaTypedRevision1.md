@@ -169,12 +169,8 @@ def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorPr
     Behaviors.receiveMessage {
       case Open | Close => alarmStatus()
         Behaviors.same
-      case Opened =>
-        ctx.log.info("The door is opened.")
-        aDoor(alarm, Opened)
-      case Closed =>
-        ctx.log.info("The door is closed.")
-        aDoor(alarm, Closed)
+      case Opened => aDoor(alarm, Opened)
+      case Closed =>aDoor(alarm, Closed)
     }
   }
 
@@ -185,10 +181,8 @@ def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[Alarm
       Behaviors.same
     case ToggleAlarm(`pinCode`) => status match {
       case AlarmActivated =>
-        ctx.log.info("Alarm deactivated: toggled.")
         anAlarm(pinCode, AlarmDeactivated)
       case AlarmDeactivated =>
-        ctx.log.info("Alarm activated: toggled.")
         anAlarm(pinCode, AlarmActivated)
     }
   }}
