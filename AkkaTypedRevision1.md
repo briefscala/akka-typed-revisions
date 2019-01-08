@@ -157,8 +157,12 @@ implicit val timeout: Timeout = Timeout(5.seconds)
 def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorProtocol] =
   Behaviors.setup { ctx =>
     def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) { // (1.)
-      case Success(status: AlarmActivated.type) => Closed
-      case Success(status: AlarmDeactivated.type) => Opened
+      case Success(status: AlarmActivated.type) => 
+        ctx.log.info("The alarm is on. Can't open the door!")
+        Closed
+      case Success(status: AlarmDeactivated.type) => 
+        ctx.log.info("The alarm if off. Opening the door!")
+        Opened
       case Failure(exception) => Closed
     }
 
@@ -166,10 +170,10 @@ def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorPr
       case Open | Close => alarmStatus()
         Behaviors.same
       case Opened =>
-        ctx.log.info("opening the door")
+        ctx.log.info("The door is opened.")
         aDoor(alarm, Opened)
       case Closed =>
-        ctx.log.info("closing the door")
+        ctx.log.info("The door is closed.")
         aDoor(alarm, Closed)
     }
   }
@@ -181,10 +185,10 @@ def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[Alarm
       Behaviors.same
     case ToggleAlarm(`pinCode`) => status match {
       case AlarmActivated =>
-        ctx.log.info("alarm deactivated: toggled")
+        ctx.log.info("Alarm deactivated: toggled.")
         anAlarm(pinCode, AlarmDeactivated)
       case AlarmDeactivated =>
-        ctx.log.info("alarm activated: toggled")
+        ctx.log.info("Alarm activated: toggled.")
         anAlarm(pinCode, AlarmActivated)
     }
   }}
