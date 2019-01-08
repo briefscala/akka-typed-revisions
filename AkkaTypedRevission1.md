@@ -182,7 +182,7 @@ def root(): Behavior[String] = Behaviors.setup { ctx =>
   val alarm = ctx.spawn(alarm(pin), "alarm")
   val door = ctx.spawn(door(alarm), "door")
   Behaviors.withTimers { timers =>
-    timers.startPeriodicTimer("alarm", "changeAlarm", 2.seconds)
+    timers.startPeriodicTimer("alarm", "changeAlarm", 3.seconds)
     timers.startPeriodicTimer("door", "tryDoor", 1.seconds)
     Behaviors.receiveMessage {
       case "changeAlarm" => alarm ! ToggleAlarm(pin)
