@@ -12,7 +12,7 @@ I would argue that although these things has happened and unfortunately still ha
 There are another two aspect about developing where the compiler help is not only significant but makes a compelling economical argument. The first is 
 productivity. Even a junior developer after just a couple of months using a robust compiler can be significantly more efficient than a developer 
 in their mid-career developer that doesn't have a compiler at hand for their every day coding. The compiler, statically check your code as you type and fails fast.
-Very fast. In fact it fails instantly helping us recover from failure and correct the code on the spot. I would argue that many of these errors, where there
+Very fast. In fact, it fails instantly helping us recover from failure and correct the code on the spot. I would argue that many of these errors, where there
 isn't a compiler, will be caught before going to production but having a compiler means that they are corrected from the get go and that translates in massive
 productivity gains. The compiler does this so fast and we are so adept to it that we not longer realised, unless we stop and ponder on it because someone asked,
 for example, why do we need to learn about higher kinded types adding that it seems like a burden unrelated to programming. 
