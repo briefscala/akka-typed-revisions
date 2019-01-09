@@ -87,7 +87,7 @@ We won't dive onto all of them here but just on the fact that it is very hard to
 So, not only traditional actors are untyped (in effect), but they can change their behavior at runtime to stop handling messages that they were known to handle. There is no
 discoverability of that fact that could protect the code against a naive refactoring or even if it wasn't naive.
 
-### Akka Type Behaviors
+### Akka Typed Behaviors
 
 The aim of this post is to revise Akka Typed and explore not only what change in terms of the api but how much more safety it brings us and what increase productivity we can 
 expect from developing Akka Typed distributed applications vs untyped applications.
@@ -142,12 +142,11 @@ will have our back here and this means huge gain on productivity while developin
 what I wrote yesterday in that other file in another package. With Akka Typed if you forget some aspect of the protocol the compiler have your back immediately and 
 get you back on track.
 
-
 ### Ask Pattern
 
 Ok, by now you should be wondering how we reply to the the interrogation messages, `GetState` or similar, since it could really be any actor and all typed actors need us to be aware of their
 protocol. The Akka Typed solution for that is straight forward. As part of our protocol we can accept a `replyTo` actor reference (in place of the implicit sender
-in traditional actors) of the type of the state/reply protocol. The requester actor will be providing the adapter function to convert from the internal state or reply to its
+in traditional actors) of the type of our state/reply protocol. The requester actor will be providing the adapter function to convert from the internal state or reply to its
 own protocol. Let's see this in our alarm system to get a better feeling for it.
 
 ```scala
