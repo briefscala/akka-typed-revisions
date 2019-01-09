@@ -169,7 +169,7 @@ def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorPr
         ctx.log.info("The alarm is on. Can't open the door!")
         Closed
       case Success(status: AlarmDeactivated.type) => 
-        ctx.log.info("The alarm if off. Opening the door!")
+        ctx.log.info("The alarm is off. Opening the door.")
         Opened
       case Failure(exception) => Closed
     }
@@ -204,12 +204,12 @@ def root(): Behavior[String] = Behaviors.setup { ctx =>
   * We'll use the behavior `withTimers` to periodically toggle the alarm and try opening the door
   */
   Behaviors.withTimers { timers => // (2.)
-    timers.startPeriodicTimer("alarm", "changeAlarm", 3.seconds)
-    timers.startPeriodicTimer("door", "tryDoor", 1.seconds)
+    timers.startPeriodicTimer("alarm", "toggleAlarm", 3.seconds)
+    timers.startPeriodicTimer("door", "tryOpen", 1.seconds)
     Behaviors.receiveMessage {
-      case "changeAlarm" => alarm ! ToggleAlarm(pin)
+      case "toggleAlarm" => alarm ! ToggleAlarm(pin)
         Behaviors.same
-      case "tryDoor" => door ! Open
+      case "tryOpen" => door ! Open
         Behaviors.same
     }
   }
