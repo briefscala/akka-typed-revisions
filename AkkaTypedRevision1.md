@@ -115,12 +115,12 @@ Ok, by now you should be wondering how we reply to the the interrogation message
 ```scala
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.Done
-import Alarm._
-import Door._
 import scala.util.{Success, Failure}
 import scala.concurrent.duration._
 import akka.util.Timeout
+import akka.Done
+import Alarm._
+import Door._
 
 def main(args: Array[String]): Unit = { // application main
 
