@@ -71,43 +71,40 @@ Let's take as an example a bulgar alarm system which is an example that has been
 import akka.actor.typed._ // (1.)
 import akka.actor.typed.scaladsl.Behaviors
 import akka.Done
-import Alarm._ // (2.)
 
-def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] = // (3.)
+def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] = // (2.)
   Behaviors.receiveMessage {
     case ActivateAlarm(`pinCode`) => 
       println("alarm activated")
-      anAlarm(pinCode, AlarmActivated) // (4.)
+      anAlarm(pinCode, AlarmActivated) // (3.)
     case DeactivateAlarm(`pinCode`) => 
       println("alarm deactivated")
       anAlarm(pinCode, AlarmDeactivated)
   }
 
-val alarmSystem = ActorSystem(anAlarm(222), "alarm") // (5.)
+val alarmSystem = ActorSystem(anAlarm(222), "alarm") // (4.)
 
 alarmSystem ! ActivateAlarm(222) // alarm activated
 alarmSystem ! DeactivateAlarm(222) // alarm deactivated
 
 //alarmSystem ! Done // doesn't compile
 
-object Alarm {
-  sealed trait AlarmCmd
-  case class ActivateAlarm(pinCode: Int) extends AlarmCmd
-  case class DeactivateAlarm(pinCode: Int) extends AlarmCmd 
-  
-  sealed trait AlarmState
-  case object AlarmActivated extends AlarmState
-  case object AlarmDeactivated extends AlarmState
-}
+sealed trait AlarmCmd // (5.)
+case class ActivateAlarm(pinCode: Int) extends AlarmCmd
+case class DeactivateAlarm(pinCode: Int) extends AlarmCmd 
+
+sealed trait AlarmState // (5.)
+case object AlarmActivated extends AlarmState
+case object AlarmDeactivated extends AlarmState
 ```
 1. Import the actor typed package 
-2. Import out `Alarm` protocol, the commands and the state protocol
-3. A constructor for the alarm `Behavior`. Note that we don't need to have a class that extends `Actor` anymore. We simply have to define the behavior of our 
+2. A constructor for the alarm `Behavior`. Note that we don't need to have a class that extends `Actor` anymore. We simply have to define the behavior of our 
 actor based on receiving messages given by its commands.
-4. In the behavior definition we said that when we get an `AlarmCmd` message we react to it by printing a message and returning a new behavior with the new
+3. In the behavior definition we said that when we get an `AlarmCmd` message we react to it by printing a message and returning a new behavior with the new
 state
-5. The ActorSystem no longer have a guardian as root, user actor, as in the untyped example. Instead it takes a behavior and a name as the root actor. Another
+4. The ActorSystem no longer have a guardian as root, user actor, as in the untyped example. Instead it takes a behavior and a name as the root actor. Another
 difference is that now you can send messages directly to `system` and these will be received by the root actor.
+5. The `Alarm` command and state protocols
 
 In this trivial alarm example if we try to activate or deactivate the alarm we get the expected behavior but we couldn't send `Done` to our alarm. The compiler will have our back here and this means huge gain on productivity while developing large Akka systems but even if those systems aren't big. It is too easy to forget what I wrote yesterday in that other file in another package. With Akka Typed if you forget some aspect of the protocol the compiler have your back immediately and get you back on track.
 
@@ -125,7 +122,7 @@ import scala.util.{Success, Failure}
 import scala.concurrent.duration._
 import akka.util.Timeout
 
-def main(args: Array[String]): Unit = {
+def main(args: Array[String]): Unit = { // application main
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -168,7 +165,8 @@ def main(args: Array[String]): Unit = {
     val door = ctx.spawn(aDoor(alarm), "door")
 
     /**
-      * We'll use the behavior `withTimers` to periodically toggle the alarm and try opening the door
+      * We'll use the behavior `withTimers` to periodically toggle 
+      * the alarm and try opening the door
       */
     Behaviors.withTimers { timers => // (2.)
       timers.startPeriodicTimer("alarm", "toggleAlarm", 3.seconds)
@@ -183,7 +181,6 @@ def main(args: Array[String]): Unit = {
   }
 
   val system = ActorSystem(root(), "system")
-
 }
 
 object Alarm {
