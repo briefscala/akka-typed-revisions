@@ -123,7 +123,6 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 
 def main(args: Array[String]): Unit = { // application main
-
   /**
   * implicit timeout for the expiring the ask request
   */
