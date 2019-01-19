@@ -2,7 +2,7 @@
 
 ### A quick look at traditional Akka
 
-You can think of Akka Typed as the same Akka you know but with more types around. If you have significant experience with Akka this is probably what you expect however, Akka Typed have significant differences that are a departure from the traditional mindset in Akka. It is in tune with Functional Programing as you might know it from other parts in the Scala scene while maintaining its distributed and asynchronous nature.
+You can think of Akka Typed as the same Akka you know but with more types around. If you have significant experience with Akka this is probably what you expect however, Akka Typed have significant differences that are a departure from the traditional mindset in Akka. It is in tune with Functional Programming as you might know it from other parts in the Scala scene while maintaining its distributed and asynchronous nature.
 
 Let's take a look. Traditional Akka actors received messages on the `Receive` method which is largely untyped represented by `PartialFunction[Any, Unit]`. Let's see an example to recap on this aspect of traditional actors.
 
@@ -10,18 +10,18 @@ Let's take a look. Traditional Akka actors received messages on the `Receive` me
 import akka.actor._
 import akka.Done
 
-val system: ActorSystem = ActorSystem("my-actor-system") // (1.)
+val system: ActorSystem = ActorSystem("my-actor-system") // (1)
 
-class MyActor extends Actor { // (2.)
-  def receive: PartialFunction[Any, Unit] = { // (3.)
+class MyActor extends Actor { // (2)
+  def receive: PartialFunction[Any, Unit] = { // (3)
     case "hello" => println("hello, friend!")
     case Done => self ! PoisonPill // dead actor
   }
 }
 
-val myActor = system.actorOf(Props(new MyActor)) // (4.)
+val myActor = system.actorOf(Props(new MyActor)) // (4)
 
-myActor ! "hello" // hello, friend! (5.)
+myActor ! "hello" // hello, friend! (5)
 myActor ! Done
 myActor ! "hello again!" // this wouldn't produce any result as the myActor is now dead
 ```
@@ -39,12 +39,12 @@ import akka.Done
 
 class MyActor extends Actor { 
 
-  def receive: PartialFunction[Any, Unit] = helloOrDead // (1.)
+  def receive: PartialFunction[Any, Unit] = helloOrDead // (1)
   
   def helloOrDead: PartialFunction[Any, Unit] = { 
     case "hello" => println("hello, friend!")
     case "-$10" => println("that is nasty!")
-      context.become(angryOrHello) // (2.)
+      context.become(angryOrHello) // (2)
     case Done => self ! PoisonPill
   }
   
@@ -52,7 +52,7 @@ class MyActor extends Actor {
     case "hello" => println("go away!")
     case "$10" => 
       println("thanks!")
-      context.become(helloOrDead) // (2.)
+      context.become(helloOrDead) // (2)
   }
 }
 ```
@@ -68,32 +68,32 @@ The aim of this post is to revise Akka Typed and explore not only what change in
 Let's take as an example a bulgar alarm system which is an example that has been explored before by Konrad Malawski [here](https://www.slideshare.net/ktoso/akka-typed-quick-talk-jfokus-2018). We will expand on it but it is good to start from known basis.
 
 ```scala
-import akka.actor.typed._ // (1.)
+import akka.actor.typed._ // (1)
 import akka.actor.typed.scaladsl.Behaviors
 import akka.Done
 
-def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] = // (2.)
+def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] = // (2)
   Behaviors.receiveMessage {
     case ActivateAlarm(`pinCode`) => 
       println("alarm activated")
-      anAlarm(pinCode, AlarmActivated) // (3.)
+      anAlarm(pinCode, AlarmActivated) // (3)
     case DeactivateAlarm(`pinCode`) => 
       println("alarm deactivated")
       anAlarm(pinCode, AlarmDeactivated)
   }
 
-val alarmSystem = ActorSystem(anAlarm(222), "alarm") // (4.)
+val alarmSystem = ActorSystem(anAlarm(222), "alarm") // (4)
 
 alarmSystem ! ActivateAlarm(222) // alarm activated
 alarmSystem ! DeactivateAlarm(222) // alarm deactivated
 
-//alarmSystem ! Done // doesn't compile
+/*alarmSystem ! Done*/ // doesn't compile
 
-sealed trait AlarmCmd // (5.)
+sealed trait AlarmCmd // (5)
 case class ActivateAlarm(pinCode: Int) extends AlarmCmd
 case class DeactivateAlarm(pinCode: Int) extends AlarmCmd 
 
-sealed trait AlarmState // (5.)
+sealed trait AlarmState // (5)
 case object AlarmActivated extends AlarmState
 case object AlarmDeactivated extends AlarmState
 ```
@@ -115,41 +115,40 @@ Ok, by now you should be wondering how we reply to the the interrogation message
 ```scala
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.Done
-import Alarm._
-import Door._
 import scala.util.{Success, Failure}
 import scala.concurrent.duration._
 import akka.util.Timeout
+import akka.Done
+import Alarm._
+import Door._
 
-def main(args: Array[String]): Unit = { // application main
-  /**
-  * implicit timeout for the expiring the ask request
-  */
+def main(args: Array[String]): Unit = {
+
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  val system = ActorSystem(root(pin = 555), "system") 
+  val system = ActorSystem(root(pin = 555), "system")
 }
 
-def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorProtocol] =
-  Behaviors.setup { ctx =>
-    def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) { // (1.)
-      case Success(status: AlarmActivated.type) =>
-        ctx.log.info("The alarm is on. Can't open the door!")
-        Closed
-      case Success(status: AlarmDeactivated.type) =>
-        ctx.log.info("The alarm is off. Opening the door.")
-        Opened
-      case Failure(exception) => Closed
+def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed)(
+  implicit timeout: Timeout): Behavior[DoorProtocol] =
+    Behaviors.setup { ctx =>
+      def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) { // (1)
+        case Success(AlarmActivated) =>
+          ctx.log.info("The alarm is on. Can't open the door!")
+          Closed
+        case Success(AlarmDeactivated) =>
+          ctx.log.info("The alarm is off. Opening the door.")
+          Opened
+        case Failure(exception) => Closed
+      }
+  
+      Behaviors.receiveMessage {
+        case Open | Close => alarmStatus()
+          Behaviors.same
+        case Opened => aDoor(alarm, Opened)
+        case Closed => aDoor(alarm, Closed)
+      }
     }
-
-    Behaviors.receiveMessage {
-      case Open | Close => alarmStatus()
-        Behaviors.same
-      case Opened => aDoor(alarm, Opened)
-      case Closed => aDoor(alarm, Closed)
-    }
-  }
 
 def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] =
   Behaviors.receive { (ctx, msg) => msg match {
@@ -169,10 +168,10 @@ def root(pin: Int): Behavior[String] = Behaviors.setup { ctx =>
   val door = ctx.spawn(aDoor(alarm), "door")
 
   /**
-    * We'll use the behavior `withTimers` to periodically toggle the alarm 
-    * and try opening the door
+    * We'll use the behavior `withTimers` to periodically toggle 
+    * the alarm and try opening the door
     */
-  Behaviors.withTimers { timers => // (2.)
+  Behaviors.withTimers { timers => // (2)
     timers.startPeriodicTimer("alarm", "toggleAlarm", 3.seconds)
     timers.startPeriodicTimer("door", "tryOpen", 1.seconds)
     Behaviors.receiveMessage {
@@ -210,4 +209,4 @@ object Door {
 1. The `ctx.ask` takes the target actor, the alarm, and its interrogation command (which can be converted to function of type `ActorRef[Response] => Request`) followed by the adapter function that convert the target's responses into our expected commands.
 2. `Behaviors.withTimers` allows to send us messages that will be received later, either just once or periodically, and they will become part of our protocol.
 
-In the next session we will continue from here and explore another way that Akka Type provides for communicating with other actors and will see how these plays out when actors are distributed.
+In the next session we will continue from here and explore another way that Akka Typed provides for communicating with other actors and will see how these plays out when actors are distributed.

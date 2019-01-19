@@ -26,25 +26,26 @@ def main(args: Array[String]): Unit = {
   val system = ActorSystem(root(pin = 555), "system")
 }
 
-def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed): Behavior[DoorProtocol] =
-  Behaviors.setup { ctx =>
-    def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) { // (1.)
-      case Success(status: AlarmActivated.type) =>
-        ctx.log.info("The alarm is on. Can't open the door!")
-        Closed
-      case Success(status: AlarmDeactivated.type) =>
-        ctx.log.info("The alarm is off. Opening the door.")
-        Opened
-      case Failure(exception) => Closed
-    }
+def aDoor(alarm: ActorRef[AlarmCmd], state: DoorState = Closed)(
+  implicit timeout: Timeout): Behavior[DoorProtocol] =
+    Behaviors.setup { ctx =>
+      def alarmStatus(): Unit = ctx.ask(alarm)(GetAlarmStatus) { // (1.)
+        case Success(status: AlarmActivated.type) =>
+          ctx.log.info("The alarm is on. Can't open the door!")
+          Closed
+        case Success(status: AlarmDeactivated.type) =>
+          ctx.log.info("The alarm is off. Opening the door.")
+          Opened
+        case Failure(exception) => Closed
+      }
 
-    Behaviors.receiveMessage {
-      case Open | Close => alarmStatus()
-        Behaviors.same
-      case Opened => aDoor(alarm, Opened)
-      case Closed => aDoor(alarm, Closed)
+      Behaviors.receiveMessage {
+        case Open | Close => alarmStatus()
+          Behaviors.same
+        case Opened => aDoor(alarm, Opened)
+        case Closed => aDoor(alarm, Closed)
+      }
     }
-  }
 
 def anAlarm(pinCode: Int, status: AlarmState = AlarmDeactivated): Behavior[AlarmCmd] =
   Behaviors.receive { (ctx, msg) => msg match {
